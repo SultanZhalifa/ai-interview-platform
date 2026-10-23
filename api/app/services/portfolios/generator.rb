@@ -24,7 +24,8 @@ module Portfolios
         generation_status: 'pending'
       )
 
-      portfolio.update!(generation_status: 'generating')
+      portfolio.update!(generation_status: 'generating', generation_started_at: Time.current,
+                        generation_attempts: portfolio.generation_attempts + 1)
 
       coverage = expected_coverage
       output   = model_needed?(coverage) ? fetch_model_output : {}
@@ -34,12 +35,29 @@ module Portfolios
       Rails.logger.info("[N10] Portfolio generated for session #{@session.id}")
       portfolio
     rescue => e
-      portfolio&.update!(generation_status: 'failed', generation_error: e.message)
+      # Stays 'generating' between Sidekiq retries; the worker marks it failed when they run out.
+      portfolio&.update!(generation_error: failure_reason(e))
       Rails.logger.error("[N10] Portfolio generation failed for session #{@session.id}: #{e.class} #{e.message}")
       raise
     end
 
     private
+
+    # Shown to assessors, so it says what happened without exposing raw error text.
+    def failure_reason(error)
+      case error
+      when UnreadableOutput then error.message
+      when Gemini::HttpClient::TimeoutError then 'The AI model did not respond in time.'
+      when Gemini::HttpClient::RateLimitError then 'The AI model is rate limited (HTTP 429).'
+      when Gemini::HttpClient::ApiError
+        case error.status
+        when 404 then 'The AI model is not available (HTTP 404). Check the configured model name.'
+        when 500..599 then "The AI model is overloaded (HTTP #{error.status})."
+        else "The AI model returned an error#{" (HTTP #{error.status})" if error.status}."
+        end
+      else "Unexpected error (#{error.class.name})."
+      end
+    end
 
     def build_prompt
       assessment       = @session.assessment

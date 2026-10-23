@@ -18,7 +18,19 @@ class Portfolio < ApplicationRecord
   scope :failed,      -> { where(generation_status: 'failed') }
   scope :generating,  -> { where(generation_status: 'generating') }
 
+  # One attempt can take 4 model calls of up to 180 s each (Faraday retries), about 12 minutes.
+  STALE_AFTER = 20.minutes
+
   def complete?    = generation_status == 'complete'
   def generating?  = generation_status == 'generating'
   def failed?      = generation_status == 'failed'
+  def in_progress? = %w[pending generating].include?(generation_status)
+
+  # In progress for longer than any attempt can take: the job was lost or the worker died.
+  def stale?
+    return false unless in_progress?
+
+    started = generation_started_at || session.ended_at
+    started.nil? || started < STALE_AFTER.ago
+  end
 end

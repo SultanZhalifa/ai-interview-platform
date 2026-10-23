@@ -231,6 +231,33 @@ RSpec.describe Portfolios::Generator do
     end
   end
 
+  context 'when an attempt fails (AC7.3)' do
+    before { say('I keep server data in a query cache.') }
+
+    {
+      Gemini::HttpClient::ApiError.new('API returned 503', status: 503) => 'The AI model is overloaded (HTTP 503).',
+      Gemini::HttpClient::ApiError.new('API returned 404', status: 404) =>
+        'The AI model is not available (HTTP 404). Check the configured model name.',
+      Gemini::HttpClient::RateLimitError.new('Rate limited', status: 429) => 'The AI model is rate limited (HTTP 429).',
+      Gemini::HttpClient::TimeoutError.new('timeout') => 'The AI model did not respond in time.',
+      RuntimeError.new('secret internals') => 'Unexpected error (RuntimeError).'
+    }.each do |error, reason|
+      it "keeps the portfolio generating with a readable reason for #{error.class.name.demodulize}" do
+        expect { generate(FakeGeminiClient.new(error)) }.to raise_error(error.class)
+
+        expect(session.portfolio.reload).to have_attributes(generation_status: 'generating', generation_attempts: 1,
+                                                            generation_error: reason)
+      end
+    end
+
+    it 'counts attempts and records when the latest one started' do
+      2.times { generate(FakeGeminiClient.new(RuntimeError.new('x'))) rescue nil }
+
+      expect(session.portfolio.reload.generation_attempts).to eq(2)
+      expect(session.portfolio.generation_started_at).to be_within(5.seconds).of(Time.current)
+    end
+  end
+
   context 'when the session has no coverage map (ended before it started)' do
     before do
       CoverageMap.where(session: session).delete_all

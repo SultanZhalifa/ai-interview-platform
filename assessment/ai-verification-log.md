@@ -56,3 +56,15 @@ risky, and how they were caught. Appended as they happen.
   printed the surviving rows: the extra one was the skill whose save had raised.
 - **Fix:** create new rows with `PortfolioSkill.new(portfolio_id: portfolio.id)`, with a comment on
   why. Both fixes are needed; the spec now passes and stays as a regression guard.
+
+## 5. Regenerate that immediately looked stalled (2026-10-26, Task D, AC7.3 / AC8)
+
+- **What was generated:** the regenerate endpoint reset `generation_started_at: nil`, and
+  `Portfolio#stale?` falls back to `session.ended_at` when that is nil.
+- **Why it was wrong:** for any session that ended more than 20 minutes ago, a portfolio that had
+  just been queued counted as stalled, so a second click would enqueue a second job: the duplicate
+  job bug (F6) this change exists to remove. All 137 specs were green at that point.
+- **How it was caught:** reading my own controller diff before committing. I wrote the missing spec
+  first ("does not let a second click restart a run that was just queued"), watched it fail with
+  200 instead of 409, then fixed it.
+- **Fix:** set `generation_started_at: Time.current` when queuing, with a comment.

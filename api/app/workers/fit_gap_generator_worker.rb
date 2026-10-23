@@ -15,5 +15,7 @@ class FitGapGeneratorWorker
   rescue StandardError => e
     Rails.logger.error("[N13] FitGapGeneratorWorker failed for portfolio=#{portfolio_id} vacancy=#{vacancy_id}: #{e.class}: #{e.message}")
     raise
+  ensure
+    FitGap::GenerationLock.release(portfolio_id, vacancy_id)
   end
 end
