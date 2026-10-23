@@ -90,7 +90,7 @@ RSpec.describe 'Portfolio tenant isolation', type: :request do
            params: { fitgap: { vacancy_id: vacancy_a.id } }, headers: headers_a, as: :json
 
       expect(response).to have_http_status(:accepted)
-      expect(FitGapGeneratorWorker.jobs.map { |j| j['args'] }).to eq([[portfolio_a.id, vacancy_a.id]])
+      expect(FitGapGeneratorWorker.jobs.map { |j| j['args'].first(2) }).to eq([[portfolio_a.id, vacancy_a.id]])
     end
 
     it 'overrides a skill rating' do

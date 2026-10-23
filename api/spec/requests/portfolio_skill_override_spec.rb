@@ -77,6 +77,8 @@ RSpec.describe 'POST /api/v1/portfolio_skills/:id/override', type: :request do
     override!(skill, level: 4)
 
     expect(FitGapReport.exists?(report.id)).to be(true)
-    expect(FitGapGeneratorWorker.jobs.map { |j| j['args'] }).to eq([[portfolio.id, report.vacancy_id]])
+    expect(FitGapGeneratorWorker.jobs.map { |j| j['args'].first(2) }).to eq([[portfolio.id, report.vacancy_id]])
+    # Nothing else was running, so the refresh owns the lock.
+    expect(FitGapGeneratorWorker.jobs.first['args'].last).to be_a(String)
   end
 end

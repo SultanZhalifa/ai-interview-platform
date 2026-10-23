@@ -38,11 +38,14 @@ module Api
 
       private
 
-      # Reports stay readable (marked outdated) until the refresh replaces them.
+      # Reports stay readable (marked outdated) until the refresh replaces them. The data changed, so
+      # the refresh is queued even when a run is in progress; it then runs without the lock (nil
+      # token) and leaves that run's lock alone.
       def regenerate_stale_fitgap_reports
         portfolio = @portfolio_skill.portfolio
         FitGapReport.where(portfolio_id: portfolio.id).pluck(:vacancy_id).each do |vacancy_id|
-          FitGapGeneratorWorker.perform_async(portfolio.id, vacancy_id)
+          token = FitGap::GenerationLock.acquire(portfolio.id, vacancy_id)
+          FitGapGeneratorWorker.perform_async(portfolio.id, vacancy_id, token)
         end
       end
 

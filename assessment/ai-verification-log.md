@@ -106,3 +106,18 @@ risky, and how they were caught. Appended as they happen.
   literal is gone from the docs and evidence. I removed the initializer temporarily to confirm the
   spec still fails without the filter (8 of 9, as before), then restored it. The pre-push scan now
   also looks for credential-like assignments.
+
+## 9. A lock any job could release (2026-10-24, found while preparing the defense)
+
+- **What was generated:** `FitGap::GenerationLock.release(portfolio_id, vacancy_id)` deleted the key
+  unconditionally, and the worker called it in `ensure`.
+- **Why it was wrong:** an override deliberately queues a refresh even while a run is in progress.
+  That refresh never took the lock, but its `ensure` still deleted it, freeing the other run's lock
+  early so a third request could start a duplicate job. All specs were green: none had a second
+  job in flight.
+- **How it was caught:** writing down where the lock could fail, for the defense questions. The new
+  spec "refreshes after an override without freeing the lock of a run in progress" failed first.
+- **Fix:** `acquire` returns a UUID stored as the key's value; `release` is a Lua compare-and-delete,
+  so only the token holder can release; the token travels as the job's third argument (optional,
+  so jobs already queued with two arguments still run). Checked on the live server: a refresh during
+  a held lock left the lock in place.

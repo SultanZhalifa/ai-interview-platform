@@ -150,15 +150,16 @@ module Api
       private
 
       def enqueue_fitgap(portfolio, vacancy, message)
-        unless FitGap::GenerationLock.acquire(portfolio.id, vacancy.id)
+        token = FitGap::GenerationLock.acquire(portfolio.id, vacancy.id)
+        unless token
           return render json: { status: "generating", message: "Fit/gap report is already being generated" },
                         status: :accepted
         end
 
         begin
-          FitGapGeneratorWorker.perform_async(portfolio.id, vacancy.id)
+          FitGapGeneratorWorker.perform_async(portfolio.id, vacancy.id, token)
         rescue StandardError
-          FitGap::GenerationLock.release(portfolio.id, vacancy.id)
+          FitGap::GenerationLock.release(portfolio.id, vacancy.id, token)
           raise
         end
         render json: { status: "generating", message: message }, status: :accepted

@@ -57,6 +57,26 @@ RSpec.describe 'Fit/gap generation', type: :request do
     expect(FitGapGeneratorWorker.jobs.size).to eq(1)
   end
 
+  it 'passes the lock token to the job, so only that job can release it' do
+    trigger
+
+    expect(FitGapGeneratorWorker.jobs.first['args']).to match([portfolio.id, vacancy.id, a_string_matching(/\A\h{8}-/)])
+  end
+
+  it 'refreshes after an override without freeing the lock of a run in progress' do
+    create(:fit_gap_report, portfolio: portfolio, vacancy: vacancy)
+    trigger_token = FitGap::GenerationLock.acquire(portfolio.id, vacancy.id)
+    skill = create(:portfolio_skill, portfolio: portfolio)
+
+    post "/api/v1/portfolio_skills/#{skill.id}/override", params: { override: { override_level: 4 } },
+                                                          headers: headers, as: :json
+    allow(FitGap::Engine).to receive(:new).and_return(instance_double(FitGap::Engine, call: nil))
+    FitGapGeneratorWorker.drain
+
+    expect(trigger_token).to be_present
+    expect(FitGap::GenerationLock.held?(portfolio.id, vacancy.id)).to be(true)
+  end
+
   it 'allows a new run once the worker has finished' do
     trigger
     allow(FitGap::Engine).to receive(:new).and_return(instance_double(FitGap::Engine, call: nil))

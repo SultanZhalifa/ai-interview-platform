@@ -169,3 +169,14 @@ Short "how to explain this" notes, one per meaningful change or decision.
   market statistics are quoted because none could be verified.
 - Files were renumbered to match the brief's steps: 01 setup, 02 context, 03 findings, 04 strategy,
   05 execution.
+
+## Lock ownership (follow-up to Task D.5)
+
+- The lock now holds a token. `acquire` returns a UUID, `release` deletes the key only if it still
+  holds that UUID (Lua compare-and-delete, atomic in Redis), and the worker gets the token as its
+  third argument. A refresh queued after an override takes the lock if it is free and otherwise runs
+  without it, leaving the running job's lock alone. Jobs queued before the change (two arguments)
+  still run and simply do not release anything.
+- Found by reviewing my own failure modes, not by a test: no spec had two jobs in flight. AI log #9.
+- Still true: a run longer than the 5-minute TTL loses the lock; its stale token then cannot delete a
+  newer holder's lock.
