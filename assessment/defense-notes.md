@@ -71,3 +71,26 @@ Short "how to explain this" notes, one per meaningful change or decision.
   `text` matched exactly (so "context" is not hidden). Symbols match as substrings, which also
   covers `invite_token` and the `:token` path param (an invite token is a bearer secret).
 - 8 of 9 examples failed before, all pass after; the dev log now shows `[FILTERED]`.
+
+## Task D.4: not assessed, normalizer, confidence, atomic upsert (AC1-AC3, AC6.1-6.2)
+
+- **Migration.** `assessment_status` (string + CHECK, not a PG enum: adding an enum value later
+  cannot be rolled back in a transaction) and `status_reason`; `ai_level` / `ai_confidence`
+  nullable. Two DB constraints make the honest state enforceable: a level exists exactly when
+  the skill is `assessed`, and a `not_assessed` skill has no confidence. Existing rows default to
+  `assessed` and already satisfy both. Down refuses (with a message) if any row has no level,
+  rather than inventing L1s. Verified up / down / up and the refusal on dev data.
+- **Where the skill list comes from.** The coverage map, not the model. The model can only fill in
+  a rating for a skill the interview tracked; invented or duplicate skills are dropped (count
+  logged, never content). No coverage map at all -> the assessment's skills, all not assessed.
+- **When the model is called.** Only if the candidate spoke and at least one skill left `not_yet`.
+  Budi's session now costs zero model calls and produces an honest "not assessed" portfolio.
+- **Normalizer.** One place that turns model output into a valid row and never raises. Level
+  accepts 3 / "3" / "L3" / 3.0; anything else is `needs_review`, never L1. Confidence is computed
+  with the PRD rule (weakest matching label wins), so "High" can no longer crash a run.
+- **Atomic and override-safe.** Rows are updated in place, matched by skill_id (any case) or
+  label, inside a savepoint with a row lock. Stale skills are removed only if no assessor touched
+  them. Two real bugs in my own first version were caught by the AC2.9 spec (AI log #3, #4).
+- **Fit/gap.** A skill with no effective level is reported as its status, never as a gap; the
+  narrative prompt says these were not measured and must not be called strengths or weaknesses.
+  An assessor override still counts as the effective level.
