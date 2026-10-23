@@ -200,15 +200,7 @@ module Api
       end
 
       def fit_gap_json(report)
-        {
-          id:                report.id,
-          portfolio_id:      report.portfolio_id,
-          vacancy_id:        report.vacancy_id,
-          skill_comparisons: report.skill_comparisons,
-          culture_narrative: report.culture_narrative,
-          overall_narrative: report.overall_narrative,
-          generated_at:      report.generated_at
-        }
+        FitGap::ReportSerializer.call(report)
       end
 
       def build_export_json(portfolio, vacancy_id = nil)

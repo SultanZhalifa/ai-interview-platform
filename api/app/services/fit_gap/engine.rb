@@ -4,6 +4,10 @@ module FitGap
   # N13: Generates a fit/gap report comparing a portfolio against a vacancy.
   # Uses rule-based comparison for skill levels + Gemini Flash for culture narrative.
   class Engine
+    # Bump when the comparison rules change, so reports built with older rules show as stale.
+    # 2: unmeasured skills are not gaps; low-confidence results are provisional.
+    RULES_VERSION = 2
+
     def initialize(portfolio:, vacancy:, gemini_client: nil)
       @portfolio = portfolio
       @vacancy   = vacancy
@@ -27,7 +31,8 @@ module FitGap
         skill_comparisons: skill_comparisons,
         culture_narrative: narratives[:culture],
         overall_narrative: narratives[:overall],
-        generated_at:      Time.current
+        generated_at:      Time.current,
+        rules_version:     RULES_VERSION
       )
 
       Rails.logger.info("[N13] Fit/gap report generated: portfolio=#{@portfolio.id} vacancy=#{@vacancy.id}")
@@ -61,14 +66,22 @@ module FitGap
           result          = 'not_assessed'
         end
 
+        overridden = portfolio_skill&.dig(:overridden) || false
+        confidence = portfolio_skill&.dig(:confidence)
+
         {
-          skill_label:     label,
-          skill_id:        vacancy_skill.skill_id,
-          candidate_level: candidate_level,
-          expected_level:  expected_level,
-          result:          result,
-          delta:           delta,
-          confidence:      portfolio_skill&.dig(:confidence)
+          skill_label:       label,
+          skill_id:          vacancy_skill.skill_id,
+          candidate_level:   candidate_level,
+          expected_level:    expected_level,
+          ai_level:          portfolio_skill&.dig(:ai_level),
+          result:            result,
+          delta:             delta,
+          confidence:        confidence,
+          # One question is not enough to call a match or a gap; an assessor's override is.
+          provisional:       !overridden && confidence == 'low' && %w[match gap exceed].include?(result),
+          overridden:        overridden,
+          assessment_status: portfolio_skill&.dig(:assessment_status)
         }
       end
 
@@ -104,7 +117,7 @@ module FitGap
       not_assessed = skill_comparisons.select { |c| c[:result] == 'not_assessed' }
       needs_review = skill_comparisons.select { |c| c[:result] == 'needs_review' }
 
-      prompt = build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review)
+      prompt = build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review, competency_summaries)
 
       begin
         response = @gemini_client.generate_content(prompt, temperature: 0.4)
@@ -116,7 +129,7 @@ module FitGap
       end
     end
 
-    def build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review)
+    def build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review, summaries)
       vacancy = @vacancy
       portfolio_session = @portfolio.session
       assessment = portfolio_session.assessment
@@ -135,6 +148,10 @@ module FitGap
         - Not assessed (#{not_assessed.count}): #{not_assessed.map { |c| c[:skill_label] }.join(', ')}
         - Needs review (#{needs_review.count}): #{needs_review.map { |c| c[:skill_label] }.join(', ')}
 
+        COMPETENCY SUMMARIES (assessed skills only):
+        #{summaries.join("\n")}
+
+        Results marked low confidence rest on a single question; call them provisional.
         Skills under Not assessed or Needs review were not measured in this interview: do not describe them as strengths or weaknesses, only as open questions for a follow-up conversation.
 
         Write two short narrative paragraphs:
@@ -147,6 +164,12 @@ module FitGap
           "overall_narrative": "..."
         }
       PROMPT
+    end
+
+    def competency_summaries
+      @portfolio.portfolio_skills.select { |s| s.assessed? && s.competency_summary.present? }.map do |s|
+        "- #{s.skill_label} (L#{s.ai_level}, #{s.ai_confidence} confidence): #{s.competency_summary}"
+      end
     end
 
     def generate_fallback_narrative(comparisons)

@@ -53,6 +53,34 @@ RSpec.describe FitGap::Engine do
     expect(client.prompts.first).to match(/not.*measured.*do not describe them as (a )?(strength|weakness)/i)
   end
 
+  it 'marks a low-confidence comparison as provisional (AC4.2)' do
+    create(:vacancy_skill, vacancy: vacancy, skill_id: 'SK-ENG-006', skill_label: 'Testing', expected_level: 2)
+    create(:portfolio_skill, portfolio: portfolio, skill_id: 'SK-ENG-006', skill_label: 'Testing', ai_level: 2,
+                             ai_confidence: 'low')
+
+    expect(row(run, 'Testing')).to include('result' => 'match', 'confidence' => 'low', 'provisional' => true)
+    expect(row(run, 'React')).to include('provisional' => false)
+  end
+
+  it 'flags overrides and keeps the AI level next to the effective one (AC4.3)' do
+    skill = portfolio.portfolio_skills.find_by(skill_label: 'React')
+    AssessorOverride.create!(portfolio_skill: skill, ai_level: 3, override_level: 2, overridden_by: 1)
+
+    expect(row(run, 'React')).to include('candidate_level' => 2, 'ai_level' => 3, 'overridden' => true,
+                                         'result' => 'match', 'provisional' => false)
+  end
+
+  it 'records the rules version it was generated with' do
+    expect(run.rules_version).to eq(FitGap::Engine::RULES_VERSION)
+  end
+
+  it 'builds the narrative from competency summaries, as PRD-02 specifies (AC4.6)' do
+    client = FakeGeminiClient.new(narrative)
+    run(client)
+
+    expect(client.prompts.first).to include('React (L3, high confidence): Consistent L3 behaviour across three probes.')
+  end
+
   it 'mentions not-assessed and needs-review skills in the fallback narrative (AC1.4)' do
     report = run(FakeGeminiClient.new(RuntimeError.new('model down')))
 
