@@ -96,3 +96,27 @@ Short "how to explain this" notes, one per meaningful change or decision.
 - **Fit/gap.** A skill with no effective level is reported as its status, never as a gap; the
   narrative prompt says these were not measured and must not be called strengths or weaknesses.
   An assessor override still counts as the effective level.
+
+## Task D.5: fit/gap contract, overrides, one job at a time, PDF (AC4, AC6.3-6.4, AC7, AC8, AC9.1)
+
+- **Contract.** `contracts/fit_gap_report.example.json` is the one shape both sides test against.
+  `FitGap::ReportSerializer` fills every key for old JSONB rows, so reports stored before this
+  change still render. `rules_version` (default 1 for existing rows) makes old reports `stale`;
+  `outdated` means an override is newer than the report. No backfill of JSONB needed.
+- **Provisional.** A low-confidence match/gap/exceed is flagged, unless an assessor overrode it:
+  one question is not enough to call a gap, a human decision is.
+- **Overrides.** Notes capped at 2,000 chars; a skill the interview never measured can be
+  overridden only with a note, and that override stores no AI level (column made nullable,
+  down-migration refuses if such rows exist). Saving an override no longer deletes the report.
+- **One job at a time.** Redis `SET NX EX 300` per (portfolio, vacancy), taken at enqueue,
+  released in the worker's `ensure`; TTL covers a dead worker. 3 POSTs -> 1 worker run, verified
+  on the running server. Trade-off: an override always queues a refresh even if one is running,
+  because the data changed; worst case is one extra model call.
+- **Retries.** Each failed attempt keeps the portfolio `generating` with a readable reason and
+  an attempt count; Sidekiq's exhausted hook marks it `failed`. Regenerate is 409 while active,
+  allowed when failed or stalled (20 min: one attempt is at most ~12 min). The stalled clock
+  starts when a job is queued (AI log #5 is the bug I caught there).
+- **PDF.** Noto Sans (OFL, licence file committed) replaces the Windows-1252 built-ins. The font
+  has no arrow glyph, so overrides are written in words; verified by rendering the PDF to PNG,
+  not only by the spec. The table marks provisional / assessor-set rows and the narratives are
+  labelled an AI-written draft. The model still writes a hiring recommendation (F9, escalated).

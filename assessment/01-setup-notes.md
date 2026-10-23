@@ -48,6 +48,8 @@ with no console errors and its API call returns 200 through CORS. Seeds create o
 | S6 | `web/` | No lockfile in the repo; `npm install` creates `package-lock.json`, so installs are not reproducible. npm 11 also skips esbuild's postinstall (esbuild still runs via its platform package). | Lockfile kept local for now, decision pending. |
 | S7 | `api/README.md` | `SECRET_KEY_BASE` "must match rakamin-api". That service is not part of this repo, so locally any value works; the shared-secret coupling is a constraint signal, not a setup step. | Generated a local value. |
 
+| S8 | Sidekiq in development | The worker process keeps the code it booted with; after changing a service or worker, jobs still ran the old code (seen as a NoMethodError from the pre-change engine). | Restart Sidekiq after backend changes. |
+
 ## Noticed during setup, to verify in Step 3
 
 - `TenantResolverMiddleware` picks the tenant from the JWT `scheme` claim using
