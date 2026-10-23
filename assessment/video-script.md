@@ -81,7 +81,7 @@ Terminal at `api/`:
 bundle exec rspec
 ```
 
-> "There were no tests and no CI. There are now 144 backend examples..."
+> "There were no tests and no CI. There are now 151 backend examples..."
 
 Terminal at `web/`:
 

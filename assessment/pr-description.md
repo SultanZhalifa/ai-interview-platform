@@ -85,7 +85,7 @@ the Network tab (one POST); try a portfolio id from another tenant (404).
 - Seeded faults on `scratch/seeded-fault`, each reverted with `git revert`: the not-assessed rule
   (`2b67f0b` / `c15c80d`, 13 failures), the tenant scope (`3c788f2` / `55382aa`, 2 failures), and
   re-requesting fit/gap while polling (`c6dfe72` / `68178bb`, 2 failures).
-- AI verification log with seven real entries: `assessment/ai-verification-log.md`.
+- AI verification log with nine real entries: `assessment/ai-verification-log.md`.
 
 ## Screenshots
 

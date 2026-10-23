@@ -36,7 +36,7 @@ Size: 44 product files changed (+1,976 / -565), 29 test and contract files added
 | AC10 no sensitive data in logs | `filter_parameter_logging_spec` |
 | AC11 UI states | `PortfolioPage.test`, `SkillPortfolioCard.test`, `OverridePanel.test`, plus a manual check at 1280 px and 375 px (screenshots) |
 
-Totals: **144 RSpec examples, 33 Vitest tests, all passing**; `tsc` and `vite build` clean. CI
+Totals: **151 RSpec examples, 33 Vitest tests, all passing**; `tsc` and `vite build` clean. CI
 workflow added; it has not run on GitHub yet because nothing has been pushed.
 
 ## 3. Proof that the tests are real
@@ -57,7 +57,7 @@ workflow added; it has not run on GitHub yet because nothing has been pushed.
 
 ## 4. AI verification moments
 
-Seven real entries in `ai-verification-log.md`. The two that matter most:
+Nine real entries in `ai-verification-log.md`. The two that matter most:
 
 1. **The error path saved a half-written skill** (#4). My first generator built new skills through
    the association; when a save failed, the existing `rescue` called `portfolio.update!`, which
@@ -71,7 +71,8 @@ Seven real entries in `ai-verification-log.md`. The two that matter most:
 Others: a zsh quirk that made every model look like a 404 (#1); trusting a model metadata
 endpoint (#2); a regenerate endpoint that made every just-queued run look stalled (#5, caught by
 reading my diff before commit, spec written first); two wrong test expectations corrected without
-weakening them (#6); a "missing name" that was a screenshot taken mid-load (#7).
+weakening them (#6); a "missing name" that was a screenshot taken mid-load (#7); a fake test password that GitGuardian
+flagged on the PR (#8); a lock that any job could release (#9, now token-owned).
 
 ## 5. Engineering choices worth defending
 

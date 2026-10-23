@@ -99,7 +99,7 @@
   <div class="kpis">
     <div class="kpi"><b>16</b><span>findings (2 P0, 10 P1, 3 P2, 1 P3), reproduced at runtime unless marked</span></div>
     <div class="kpi"><b>11</b><span>acceptance criteria written before code</span></div>
-    <div class="kpi"><b>144 + 33</b><span>RSpec examples + Vitest tests, all passing</span></div>
+    <div class="kpi"><b>151 + 33</b><span>RSpec examples + Vitest tests, all passing</span></div>
     <div class="kpi"><b>3 / 3</b><span>seeded faults caught, reverted with history</span></div>
   </div>
 </div>
@@ -241,7 +241,7 @@
   </table>
   <h3>Proof that the tests are real</h3>
   <ul>
-    <li><b>Red before green</b> for every group, both outputs saved in <code>assessment/evidence/tests/</code>. 144 RSpec examples and 33 Vitest tests pass; <code>tsc</code> and the production build are clean.</li>
+    <li><b>Red before green</b> for every group, both outputs saved in <code>assessment/evidence/tests/</code>. 151 RSpec examples and 33 Vitest tests pass; <code>tsc</code> and the production build are clean.</li>
     <li><b>Seeded fault test</b> on <code>scratch/seeded-fault</code>, each reverted with <code>git revert</code> so the history stays visible:
       <table style="margin-top:4pt">
         <tr><th>Fault</th><th>Commits</th><th>Caught by</th></tr>
@@ -253,13 +253,13 @@
     <li><b>Runtime re-checks</b> with real Gemini after each backend group: three fit/gap requests run one job; cross-tenant calls return 404; the corrected PDF renders, checked by rendering it to an image, which caught a missing arrow glyph the spec could not.</li>
   </ul>
   <div style="break-inside: avoid">
-  <h3>AI verification moments (7 real entries in <code>ai-verification-log.md</code>)</h3>
+  <h3>AI verification moments (9 real entries in <code>ai-verification-log.md</code>)</h3>
   <div class="callout warn">
     <p><b>The error path saved a half-written skill.</b> My first generator built new skills through the association. When a save failed inside the transaction, the existing <code>rescue</code> called <code>portfolio.update!</code>, which autosaved the unsaved skill outside the rolled-back transaction: exactly the partial write this change was meant to remove, and it would have happened in production. The atomicity spec caught it; I found the cause by printing the surviving rows instead of guessing.</p>
     <p style="margin:0"><b>A wrong explanation, corrected.</b> I first blamed nested transactions and logged a symptom I had not observed. Re-reading the log, I tested the claim (removed <code>requires_new</code>; every spec still passed: RSpec's transaction is non-joinable) and corrected the entry and the code comment in a separate commit.</p>
   </div>
   </div>
-  <p class="small">Also logged: a shell quirk that made every model look like a 404; trusting a metadata endpoint; a regenerate path that made every just-queued run look stalled (caught reviewing my diff, spec first); two wrong test expectations fixed by making one stricter, not looser; a "missing name" that was a screenshot taken mid-load.</p>
+  <p class="small">Also logged: a shell quirk that made every model look like a 404; trusting a metadata endpoint; a regenerate path that made every just-queued run look stalled (caught reviewing my diff, spec first); two wrong test expectations fixed by making one stricter, not looser; a "missing name" that was a screenshot taken mid-load; a fake test password a secret scanner flagged on the PR; and a lock any job could release, found while listing failure modes and fixed with a token-owned lock.</p>
 </div>
 
 <!-- Before / after gallery -->
