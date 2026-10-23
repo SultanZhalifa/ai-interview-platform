@@ -29,15 +29,20 @@ risky, and how they were caught. Appended as they happen.
 - **Fix:** test models with a real `generateContent` call. Local config now uses
   `gemini-2.5-flash`, documented as an assumption in `03-findings.md`.
 
-## 3. Nested transaction that did not roll back (2026-10-24, Task D, AC2.9)
+## 3. Wrong diagnosis: "the nested transaction did not roll back" (2026-10-24, Task D, AC2.9)
 
-- **What was generated:** `save_skills` wrapped in `ActiveRecord::Base.transaction do ... end`.
-- **Why it was risky:** a nested `transaction` call without `requires_new: true` does not create a
-  savepoint. If a caller already holds a transaction (the RSpec example does; a future caller
-  could), an exception inside propagates without undoing the rows written before it.
-- **How it was caught:** the AC2.9 spec ("leaves every previous skill untouched when saving fails
-  halfway") failed: the React skill had been updated even though a later save raised.
-- **Fix:** `transaction(requires_new: true)`. The spec still failed after this, which led to #4.
+- **What was generated:** when the AC2.9 spec failed (3 skills left instead of 2), I explained it as
+  "a nested `transaction` without `requires_new: true` creates no savepoint inside the RSpec
+  example's transaction", added `requires_new: true`, and first wrote this entry claiming the React
+  skill had been updated. That was never observed: the React level assertion had passed.
+- **How it was caught:** the spec still failed after the change (see #4 for the real cause). While
+  re-reading this log I noticed the entry described something I had not seen, so I tested the claim:
+  removed `requires_new`, ran the generator spec, and all 18 examples passed.
+- **Why the explanation was wrong:** rspec-rails opens its per-example transaction as non-joinable,
+  so a nested `transaction` in app code already gets a savepoint. The extra row came from #4 only.
+- **What was kept:** `requires_new: true` stays as a defensive choice (it matters if a caller opens
+  a joinable transaction and rescues the error). The code comment was corrected to say exactly
+  that, in a separate commit so the correction is visible in history.
 
 ## 4. Half-written skill saved by the error path (2026-10-24, Task D, AC2.9)
 

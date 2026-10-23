@@ -90,7 +90,9 @@ Short "how to explain this" notes, one per meaningful change or decision.
   with the PRD rule (weakest matching label wins), so "High" can no longer crash a run.
 - **Atomic and override-safe.** Rows are updated in place, matched by skill_id (any case) or
   label, inside a savepoint with a row lock. Stale skills are removed only if no assessor touched
-  them. Two real bugs in my own first version were caught by the AC2.9 spec (AI log #3, #4).
+  them. One real bug in my own first version was caught by the AC2.9 spec: the error path autosaved
+  a half-built skill (AI log #4). I also gave a wrong explanation first and corrected it after
+  testing it (AI log #3); be ready to explain non-joinable test transactions.
 - **Fit/gap.** A skill with no effective level is reported as its status, never as a gap; the
   narrative prompt says these were not measured and must not be called strengths or weaknesses.
   An assessor override still counts as the effective level.

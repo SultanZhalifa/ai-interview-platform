@@ -184,8 +184,8 @@ module Portfolios
 
     # Writes every skill in one transaction, updating rows in place so assessor overrides survive.
     # The row lock serialises two jobs generating the same portfolio. requires_new makes this a
-    # savepoint when a caller already holds a transaction; without it a failure here would not roll
-    # back the rows written so far.
+    # savepoint, so these writes are undone on failure even if a caller has opened a transaction
+    # and rescues the error (a joined transaction would leave them to the caller's outcome).
     def save_skills(portfolio, coverage, output)
       rows = candidate_spoke? ? coverage : coverage.map { |row| not_discussed(row) }
 
