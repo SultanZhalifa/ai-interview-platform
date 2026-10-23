@@ -91,3 +91,18 @@ risky, and how they were caught. Appended as they happen.
   before the session request returned.
 - **Outcome:** no code change; the extra assertion stays. Lesson: check the DOM, not a screenshot
   taken during loading.
+
+## 8. A fake password that a secret scanner flagged (2026-10-24, PR #185)
+
+- **What was generated:** the AC10 spec used a literal fake password as the value to be filtered, and
+  the same literal was copied into the N1 evidence and a test output file.
+- **Why it was risky:** it was never a real credential, but a password-shaped literal in a public
+  repo trips secret scanners, and "committing secrets" is a disqualifier for this exercise. My own
+  pre-push scan only looked for token and key formats (`eyJ…`, `AIza…`), so it missed it.
+- **How it was caught:** GitGuardian's check on the PR flagged it in `filter_parameter_logging_spec.rb`
+  (commit `273ccd3`).
+- **Fix:** forward, not by rewriting history (rewriting would change every commit hash cited in the
+  report and the seeded fault evidence). The spec now generates credential-like values per run; the
+  literal is gone from the docs and evidence. I removed the initializer temporarily to confirm the
+  spec still fails without the filter (8 of 9, as before), then restored it. The pre-push scan now
+  also looks for credential-like assignments.

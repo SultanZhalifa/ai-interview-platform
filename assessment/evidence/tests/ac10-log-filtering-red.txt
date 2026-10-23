@@ -6,7 +6,7 @@ Failures:
      Failure/Error: expect(filter.filter(key => value)[key]).to eq('[FILTERED]')
 
        expected: "[FILTERED]"
-            got: "FakePassw0rd-not-real"
+            got: "<the fake test password, plain text; value removed from this file after a secret scanner flagged the literal>"
 
        (compared using ==)
      # ./spec/config/filter_parameter_logging_spec.rb:20:in `block (3 levels) in <top (required)>'

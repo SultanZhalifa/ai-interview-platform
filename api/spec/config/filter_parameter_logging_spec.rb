@@ -7,14 +7,16 @@ require 'rails_helper'
 RSpec.describe 'parameter filtering for logs' do
   let(:filter) { ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters) }
 
+  # Credential-like values are generated per run: the spec only checks that they are replaced, and a
+  # literal password in the repo, even a fake one, trips secret scanners.
   {
-    'password'       => 'FakePassw0rd-not-real',
-    'token'          => 'an-invite-token',
+    'password'       => SecureRandom.hex(8),
+    'token'          => SecureRandom.hex(8),
     'email'          => 'fake.user@example.test',
     'candidate_name' => 'Dewi Lestari (fake)',
     'assessor_notes' => 'Struggled with the follow-up question.',
     'text'           => 'A sentence the candidate said.',
-    'api_key'        => 'not-a-real-key'
+    'api_key'        => SecureRandom.hex(8)
   }.each do |key, value|
     it "filters #{key}" do
       expect(filter.filter(key => value)[key]).to eq('[FILTERED]')
