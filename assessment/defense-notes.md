@@ -143,3 +143,18 @@ Short "how to explain this" notes, one per meaningful change or decision.
   test uses `shouldAdvanceTime`. A persistent `mockRejectedValue` made Vitest report the rejection
   even though the component caught it (verified with a log line); the test now uses
   `mockRejectedValueOnce` plus a call-count assertion. I did not find the root cause.
+
+## Task E: seeded fault test
+
+- Branch `scratch/seeded-fault` (off `16e5e82`), three fault commits, each followed by a
+  `git revert` (not a reset), so the history shows the break and the fix. The tip is identical to
+  the feature branch.
+- Fault 1 `2b67f0b` / revert `c15c80d`: removed the `not_yet -> not_assessed` rule (F2).
+  13 RSpec failures. 9 of them are `RecordInvalid` from the model validation, i.e. a second
+  safety net (an assessed skill must have a confidence) caught it even before the assertions.
+- Fault 2 `3c788f2` / revert `55382aa`: export back to `Portfolio.find` (F1). The two cross-tenant
+  export specs fail (200 and 500 instead of 404).
+- Fault 3 `c6dfe72` / revert `68178bb`: hook re-requests generation on every 202 (F7). Vitest
+  reports `triggerFitGap` called 3 times instead of once.
+- Picked one fault per layer the slice protects: scoring rule, tenant boundary, client polling.
+- No assertion was edited on the scratch branch; only product code changed.
