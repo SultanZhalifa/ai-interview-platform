@@ -120,3 +120,26 @@ Short "how to explain this" notes, one per meaningful change or decision.
   has no arrow glyph, so overrides are written in words; verified by rendering the PDF to PNG,
   not only by the spec. The table marks provisional / assessor-set rows and the narratives are
   labelled an AI-written draft. The model still writes a hiring recommendation (F9, escalated).
+
+## Task D.6: frontend (AC1.5, AC4 UI, AC6.5, AC7.1, AC9.2-9.3, AC11)
+
+- **Types first.** Making `types/index.ts` match the contract turned F3 into compile errors:
+  `required_level` and `is_override` did not exist, and `parseLevel` (which turned null into L1)
+  was the only thing keeping not-assessed skills "rated". It is deleted.
+- **Contract test.** `ComparisonTable.test.tsx` renders `contracts/fit_gap_report.example.json`;
+  the API's serializer spec checks the same file. Rename a field on either side and a suite fails.
+- **One request.** `useFitGapReport` holds the rule: on 404 it POSTs once, then only polls GET,
+  which now answers 202 while generating. Tested with fake timers (one POST across several polls)
+  and seen in the browser network log: 404, POST 202, GET 202, GET 200.
+- **States.** Not assessed / Needs review with the reason, provisional notes, override provenance
+  (who, when, what it replaced), retry progress with the readable reason, stalled with Retry,
+  failed with reason, load and export errors, partial ("4 of 5 skills assessed"), and nothing
+  discussed (points to a new invitation, which is the right next step for a dropped connection).
+- **Mobile.** Checked at 375 px in a real browser: no horizontal scroll (was 550 px), fit/gap rows
+  stack so the result stays visible, card headers wrap instead of overlapping the button.
+- **Design system.** Reused Card, Button, Select, LevelBadge, existing colour classes and lucide
+  icons; added one small `Notice` component for inline warnings and errors. Emoji icons removed.
+- **Test harness notes.** Testing Library's `waitFor` only knows Jest fake timers, so the hook
+  test uses `shouldAdvanceTime`. A persistent `mockRejectedValue` made Vitest report the rejection
+  even though the component caught it (verified with a log line); the test now uses
+  `mockRejectedValueOnce` plus a call-count assertion. I did not find the root cause.

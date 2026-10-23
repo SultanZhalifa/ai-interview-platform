@@ -68,3 +68,26 @@ risky, and how they were caught. Appended as they happen.
   first ("does not let a second click restart a run that was just queued"), watched it fail with
   200 instead of 409, then fixed it.
 - **Fix:** set `generation_started_at: Time.current` when queuing, with a comment.
+
+## 6. Test expectations I wrote wrong (2026-10-27, Task D, web)
+
+- **What was generated:** two assertions in the ComparisonTable contract test: "find L2 in the
+  Communication row" and "summary says 2 match".
+- **Why they were wrong:** that row has L2 in both Required and Candidate, so the query was
+  ambiguous; and the contract's Testing row is a *provisional* match, which by AC4.2 must not be
+  counted as a firm match, so "1 match, 1 provisional" is correct.
+- **How it was caught:** both failed after the component was written. I checked each failure
+  against the acceptance criteria before touching anything, because changing a test is exactly
+  where "weakening an assertion" would happen.
+- **Fix:** the first assertion became stricter (the 2nd cell of each row must contain the required
+  level); the second now expects the AC4.2 counts. Neither check was removed.
+
+## 7. A bug that was not there (2026-10-27, Task D, browser check)
+
+- **What happened:** after rewriting PortfolioPage, a screenshot and a `find` showed no candidate
+  name, and I reported it as a regression.
+- **How it was checked:** the API response had the name; I added an assertion to the page test
+  (it passed), then inspected the live DOM: the name was rendered. The screenshot had been taken
+  before the session request returned.
+- **Outcome:** no code change; the extra assertion stays. Lesson: check the DOM, not a screenshot
+  taken during loading.
