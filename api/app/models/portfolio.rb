@@ -9,6 +9,11 @@ class Portfolio < ApplicationRecord
 
   validates :generation_status, inclusion: { in: GENERATION_STATUSES }
 
+  # Portfolios have no tenant_id; they belong to a tenant through their session. Session's
+  # TenantScoped default scope is applied inside the join, so during a request this only finds
+  # the current tenant's portfolios. Workers run without a tenant and still see every row.
+  scope :in_current_tenant, -> { joins(:session) }
+
   scope :complete,    -> { where(generation_status: 'complete') }
   scope :failed,      -> { where(generation_status: 'failed') }
   scope :generating,  -> { where(generation_status: 'generating') }
