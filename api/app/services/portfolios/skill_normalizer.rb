@@ -24,6 +24,7 @@ module Portfolios
     end
 
     def call
+      return not_assessed if @coverage.state == 'not_yet'
       return needs_review('The AI returned no rating for this skill.') unless @entry.is_a?(Hash)
 
       level = parse_level(@entry['level'])
