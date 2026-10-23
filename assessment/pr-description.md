@@ -1,7 +1,8 @@
 # Never report a rating the interview did not earn
 
-Case study submission (Sultan Z. M.). One PR across `api/` and `web/`. Report:
-<!-- report link or "attached in the hiring platform" --> · Video: <!-- video link -->
+Case study submission (Sultan Z. M.). One PR across `api/` and `web/`. Report: uploaded to the hiring platform (source in `assessment/report/`) · Video: <!-- video link -->
+
+Seeded fault history: [`scratch/seeded-fault`](https://github.com/SultanZhalifa/ai-interview-platform/commits/scratch/seeded-fault).
 
 ## Problem
 
