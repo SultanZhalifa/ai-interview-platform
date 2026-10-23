@@ -74,6 +74,8 @@ module Exports
       end
     end
 
+    STATUS_LABELS = { 'not_assessed' => 'Not assessed', 'needs_review' => 'Needs review' }.freeze
+
     def render_skill_card(pdf, skill)
       override = skill.assessor_override
       effective_level = override ? override.override_level : skill.ai_level
@@ -81,9 +83,9 @@ module Exports
       pdf.font_size(11) do
         pdf.text "#{skill.skill_label}", style: :bold
 
-        level_text = "Level: #{LEVEL_LABELS[effective_level]}"
+        level_text = "Level: #{LEVEL_LABELS[effective_level] || STATUS_LABELS[skill.assessment_status]}"
         level_text += " (AI: #{LEVEL_LABELS[skill.ai_level]} → Override: #{LEVEL_LABELS[override.override_level]})" if override
-        level_text += "  |  Confidence: #{CONFIDENCE_LABELS[skill.ai_confidence] || skill.ai_confidence}"
+        level_text += "  |  Confidence: #{CONFIDENCE_LABELS[skill.ai_confidence] || skill.ai_confidence}" if skill.ai_confidence
         pdf.text level_text
       end
 

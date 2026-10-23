@@ -43,7 +43,13 @@ module FitGap
       comparisons = vacancy_skills.map do |label, vacancy_skill|
         portfolio_skill = find_portfolio_skill(portfolio_skills, label, vacancy_skill.skill_id)
 
-        if portfolio_skill
+        if portfolio_skill && portfolio_skill[:effective_level].nil?
+          # Not measured (or model output not trusted) and no assessor override: never a gap.
+          candidate_level = nil
+          expected_level  = vacancy_skill.expected_level
+          delta           = nil
+          result          = portfolio_skill[:assessment_status]
+        elsif portfolio_skill
           candidate_level  = portfolio_skill[:effective_level]
           expected_level   = vacancy_skill.expected_level
           delta            = candidate_level - expected_level
@@ -78,6 +84,7 @@ module FitGap
           skill_id:        skill.skill_id,
           skill_label:     skill.skill_label,
           ai_level:        skill.ai_level,
+          assessment_status: skill.assessment_status,
           effective_level: override ? override.override_level : skill.ai_level,
           confidence:      skill.ai_confidence,
           overridden:      override.present?
@@ -95,8 +102,9 @@ module FitGap
       matches = skill_comparisons.select { |c| c[:result] == 'match' }
       exceeds = skill_comparisons.select { |c| c[:result] == 'exceed' }
       not_assessed = skill_comparisons.select { |c| c[:result] == 'not_assessed' }
+      needs_review = skill_comparisons.select { |c| c[:result] == 'needs_review' }
 
-      prompt = build_narrative_prompt(gaps, matches, exceeds, not_assessed)
+      prompt = build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review)
 
       begin
         response = @gemini_client.generate_content(prompt, temperature: 0.4)
@@ -108,7 +116,7 @@ module FitGap
       end
     end
 
-    def build_narrative_prompt(gaps, matches, exceeds, not_assessed)
+    def build_narrative_prompt(gaps, matches, exceeds, not_assessed, needs_review)
       vacancy = @vacancy
       portfolio_session = @portfolio.session
       assessment = portfolio_session.assessment
@@ -125,6 +133,9 @@ module FitGap
         - Gaps (#{gaps.count}): #{gaps.map { |c| "#{c[:skill_label]}: candidate L#{c[:candidate_level]} vs expected L#{c[:expected_level]} (delta #{c[:delta]})" }.join(', ')}
         - Exceeds (#{exceeds.count}): #{exceeds.map { |c| "#{c[:skill_label]}: candidate L#{c[:candidate_level]} vs expected L#{c[:expected_level]} (+#{c[:delta]})" }.join(', ')}
         - Not assessed (#{not_assessed.count}): #{not_assessed.map { |c| c[:skill_label] }.join(', ')}
+        - Needs review (#{needs_review.count}): #{needs_review.map { |c| c[:skill_label] }.join(', ')}
+
+        Skills under Not assessed or Needs review were not measured in this interview: do not describe them as strengths or weaknesses, only as open questions for a follow-up conversation.
 
         Write two short narrative paragraphs:
         1. culture_narrative: 2-3 sentences on culture/competency fit based on the comparison patterns.
@@ -142,8 +153,13 @@ module FitGap
       gaps    = comparisons.count { |c| c[:result] == 'gap' }
       matches = comparisons.count { |c| c[:result] == 'match' }
       exceeds = comparisons.count { |c| c[:result] == 'exceed' }
+      not_assessed = comparisons.count { |c| c[:result] == 'not_assessed' }
+      needs_review = comparisons.count { |c| c[:result] == 'needs_review' }
 
-      "Candidate shows #{matches} skill matches, #{exceeds} exceeds, and #{gaps} gaps against role requirements."
+      text = "Candidate shows #{matches} skill matches, #{exceeds} exceeds, and #{gaps} gaps against role requirements."
+      return text if (not_assessed + needs_review).zero?
+
+      "#{text} #{not_assessed} not assessed and #{needs_review} needing review were left out of the comparison."
     end
   end
 end
