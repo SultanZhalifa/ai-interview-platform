@@ -24,3 +24,16 @@ Short "how to explain this" notes, one per meaningful change or decision.
   inside a transaction that is rolled back, so no real data was changed.
 - Two findings were downgraded after runtime checks (F4 not observed wrong, F8 only loses the
   report if the job never runs). Being able to say what did NOT reproduce is part of the story.
+
+## Task C: the three decisions most likely to be challenged
+
+- **Status column instead of "no row" for not-assessed skills.** A portfolio should be a complete
+  account of the interview. With no row there is nowhere to put "needs review", and every future
+  reader (engine, PDF, JSON, UI) must remember to merge coverage maps back in, which is exactly
+  how F2 happened. Down-migration refuses to run if NULL levels exist, instead of inventing L1s.
+- **Tenant scope through `joins(:session)` now, `tenant_id` columns later.** Verified that Rails
+  7.0 applies Session's default scope inside the join. It closes the P0 without a production data
+  migration; request specs per endpoint pin it. Two-layer isolation is the follow-up.
+- **Keep `expected_level` in the API, fix the web, add a shared contract file.** The bug was two
+  sides drifting with nothing to notice. The contract example is read by both RSpec and Vitest,
+  so a rename on either side fails a test.
