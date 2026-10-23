@@ -17,3 +17,6 @@ web/.vite/
 
 # OS
 .DS_Store
+
+# Draft render of assessment/report/report.html; the final PDF is uploaded to the hiring platform.
+assessment/report/*-DRAFT.pdf

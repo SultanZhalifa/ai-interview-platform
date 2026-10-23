@@ -158,3 +158,14 @@ Short "how to explain this" notes, one per meaningful change or decision.
   reports `triggerFitGap` called 3 times instead of once.
 - Picked one fault per layer the slice protects: scoring rule, tenant boundary, client polling.
 - No assertion was edited on the scratch branch; only product code changed.
+
+## Task G: report, video, PR
+
+- The report (`assessment/report/report.html`, rendered with headless Chrome) mirrors Steps 1 to 5
+  and is built from the documents in `assessment/`; every number in it was taken from the repo at
+  render time (test counts from the suites, commit hashes from git). Re-render after adding the PR
+  and video links.
+- UU PDP articles were checked against the published text before citing (Pasal 10, 16, 34); no
+  market statistics are quoted because none could be verified.
+- Files were renumbered to match the brief's steps: 01 setup, 02 context, 03 findings, 04 strategy,
+  05 execution.
