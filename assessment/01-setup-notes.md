@@ -45,9 +45,8 @@ with no console errors and its API call returns 200 through CORS. Seeds create o
 | S3 | `web/.env.example` | Points at port 3000, but the API listens on 3001 (`puma.rb`, README). | Set `VITE_API_BASE_URL=http://localhost:3001/api/v1`, `VITE_WS_BASE_URL=ws://localhost:3001`. |
 | S4 | `api/README.md` | Says `cd ../ai-interview-web` (old repo layout; it is `web/` now) and lists `GEMINI_ANALYSIS_MODEL`, but the code reads `GEMINI_FLASH_MODEL` (`coverage/analyzer.rb`, `fit_gap/engine.rb`). | Followed the code and the `.sample` file. |
 | S5 | `application.yml.sample` vs README | Verified: `generateContent` on `v1` returns 404 for the sample ids (`gemini-2.0-pro-001`, `gemini-2.0-flash-001`) and for the README's `gemini-2.5-pro` ("no longer available to new users"). `gemini-3.1-pro-preview` is 404 on `v1` too (the client hardcodes `v1`). `gemini-3.5-flash` worked but returned 503 under load. | Local only: `GEMINI_PRO_MODEL` and `GEMINI_FLASH_MODEL` = `gemini-2.5-flash`. See finding N2. |
-| S6 | `web/` | No lockfile in the repo; `npm install` creates `package-lock.json`, so installs are not reproducible. npm 11 also skips esbuild's postinstall (esbuild still runs via its platform package). | Lockfile kept local for now, decision pending. |
+| S6 | `web/` | No lockfile in the repo; `npm install` creates `package-lock.json`, so installs are not reproducible. npm 11 also skips esbuild's postinstall (esbuild still runs via its platform package). | Lockfile committed with the test harness (`3584a9e`) so CI can run `npm ci`. |
 | S7 | `api/README.md` | `SECRET_KEY_BASE` "must match rakamin-api". That service is not part of this repo, so locally any value works; the shared-secret coupling is a constraint signal, not a setup step. | Generated a local value. |
-
 | S8 | Sidekiq in development | The worker process keeps the code it booted with; after changing a service or worker, jobs still ran the old code (seen as a NoMethodError from the pre-change engine). | Restart Sidekiq after backend changes. |
 
 ## Noticed during setup, to verify in Step 3
