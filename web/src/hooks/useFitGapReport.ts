@@ -23,6 +23,7 @@ export function useFitGapReport(portfolioId: number | null, vacancyId: number) {
     try {
       const res = await portfoliosApi.getFitGap(portfolioId, vacancyId);
       if (res.status === 202) {
+        await portfoliosApi.triggerFitGap(portfolioId, vacancyId);
         setPhase("generating");
         return;
       }
